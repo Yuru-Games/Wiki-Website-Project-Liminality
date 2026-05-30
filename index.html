@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIMINALITY // MISC DATABASE WIKI</title>
+    <style>
+        /* Theme Variables (Retro CRT) */
+        :root {
+            --bg-color: #0c0b08;
+            --text-color: #d6cc9a;
+            --neon-green: #39ff14;
+            --dark-yellow: #4a4521;
+            --accent-red: #8b0000;
+            --sidebar-width: 280px;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+        }
+
+        .vhs-noise {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.02;
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+        }
+
+        .crt-lines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 998;
+        }
+
+        /* Mobile Header */
+        .mobile-header {
+            display: none;
+            background: #12100c;
+            border-bottom: 2px solid var(--dark-yellow);
+            padding: 10px 15px;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 50px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .menu-toggle:active {
+            color: var(--neon-green);
+            border-color: var(--neon-green);
+        }
+
+        #wiki-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Sidebar & Search */
+        aside {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            background: rgba(15, 14, 11, 0.98);
+            border-right: 2px solid var(--dark-yellow);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.9);
+            box-sizing: border-box;
+            z-index: 150;
+            overflow-y: auto;
+        }
+
+        .wiki-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 2px solid var(--text-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .search-box {
+            width: 100%;
+            background: #000;
+            border: 1px solid var(--dark-yellow);
+            color: var(--neon-green);
+            padding: 8px;
+            font-family: inherit;
+            margin-bottom: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .wiki-category-wrapper {
+            margin-bottom: 1rem;
+        }
+
+        .wiki-category {
+            font-size: 0.75rem;
+            color: var(--dark-yellow);
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        nav li {
+            padding: 6px 0 6px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            border-left: 2px solid transparent;
+        }
+
+        nav li:hover, nav li.active {
+            color: var(--neon-green);
+            border-left: 2px solid var(--neon-green);
+            background: rgba(57, 255, 20, 0.05);
+        }
+
+        /* Article Content */
+        main {
+            flex-grow: 1;
+            padding: 3rem 4rem;
+            overflow-y: auto;
+            background: rgba(12, 11, 8, 0.98);
+            box-sizing: border-box;
+        }
+
+        .wiki-article {
+            display: none;
+            animation: wikiPageLoad 0.2s ease-out;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .wiki-article.active {
+            display: block;
+        }
+
+        @keyframes wikiPageLoad {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        h1 {
+            font-size: 2rem;
+            border-bottom: 1px solid var(--dark-yellow);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+            color: #fff;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            border-bottom: 1px solid rgba(214, 204, 154, 0.2);
+            padding-bottom: 0.3rem;
+            margin-top: 2rem;
+            clear: both;
+        }
+        
+        ul, li {
+            line-height: 1.5;
+        }
+
+        .wikilink {
+            color: var(--neon-green);
+            text-decoration: none;
+            cursor: pointer;
+            border-bottom: 1px dashed var(--neon-green);
+        }
+
+        /* Infobox Component */
+        .infobox {
+            float: right;
+            width: 280px;
+            background: rgba(25, 23, 18, 0.8);
+            border: 1px solid var(--dark-yellow);
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+            padding: 10px;
+            font-size: 0.8rem;
+            box-sizing: border-box;
+        }
+
+        .infobox-title {
+            text-align: center;
+            font-weight: bold;
+            background: var(--dark-yellow);
+            color: #000;
+            padding: 5px;
+            text-transform: uppercase;
+        }
+
+        .infobox table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        .infobox td {
+            padding: 5px 4px;
+            border-bottom: 1px solid rgba(214, 204, 154, 0.1);
+        }
+
+        .infobox td:first-child {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .wiki-alert {
+            border-left: 4px solid var(--accent-red);
+            background: rgba(139, 0, 0, 0.1);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            clear: both;
+        }
+
+        .responsive-table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 1rem;
+            border: 1px solid var(--dark-yellow);
+        }
+
+        .wiki-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 500px;
+        }
+
+        .wiki-table thead {
+            background: var(--dark-yellow);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .wiki-table td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(214, 204, 154, 0.2);
+        }
+
+        #audio-toggle {
+            margin-top: auto;
+            background: none;
+            border: 1px solid var(--dark-yellow);
+            color: var(--text-color);
+            padding: 8px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Smartphone Adaptation */
+        @media (max-width: 768px) {
+            .mobile-header {
+                display: flex;
+            }
+
+            aside {
+                position: fixed;
+                top: 50px;
+                left: calc(-1 * var(--sidebar-width));
+                height: calc(100% - 50px);
+                transition: left 0.2s ease;
+                box-shadow: none;
+            }
+
+            aside.open {
+                left: 0;
+                box-shadow: 5px 0 15px rgba(0,0,0,0.9);
+            }
+
+            main {
+                padding: 1.5rem;
+                padding-top: 4.5rem;
+                height: 100%;
+            }
+
+            .infobox {
+                float: none;
+                width: 100%;
+                margin-left: 0;
+                margin-bottom: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            h2 {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="vhs-noise"></div>
+    <div class="crt-lines"></div>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <button class="menu-toggle" id="menu-btn">MENU ☰</button>
+        <div style="font-weight: bold; font-size: 0.9rem; letter-spacing: 1px;">LIMINALITY // WIKI</div>
+    </header>
+
+    <div id="wiki-container">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="wiki-title">PROJECT // LIMINALITY</div>
+            <input type="text" id="wiki-search" class="search-box" placeholder="Filter index...">
+            
+            <nav id="wiki-nav">
+                <div class="wiki-category-wrapper">
+                    <div class="wiki-category">General</div>
+                    <ul>
+                        <li data-target="wiki-main" class="active">Main Index</li>
+                        <li data-target="wiki-start">Starting Equipment</li>
+                    </ul>
+                </div>
+
+                <div class="wiki-category-wrapper">
+                    <div class="wiki-category">Entities</div>
+                    <ul>
+                        <li data-target="entity-01">Entity 01 : The Life Form</li>
+                        <li data-target="entity-02">Entity 02 : Skin-Stealers</li>
+                        <li data-target="entity-03">Entity 03 : The Infection</li>
+                        <li data-target="entity-04">Entity 04 : Wretches</li>
+                        <li data-target="entity-05">Entity 05 : Bone Thieves</li>
+                        <li data-target="entity-06">Entity 06 : Smilers</li>
+                        <li data-target="entity-06-b">Entity 06-B : Frowners</li>
+                        <li data-target="entity-07">Entity 07 : Hounds</li>
+                        <li data-target="entity-08">Entity 08 : Facelings</li>
+                        <li data-target="rare-encounters">Rare Encounters</li>
+                    </ul>
+                </div>
+
+                <div class="wiki-category-wrapper">
+                    <div class="wiki-category">Foods (Consumables)</div>
+                    <ul>
+                        <li data-target="items-food">Foods & Effects</li>
+                    </ul>
+                </div>
+
+                <div class="wiki-category-wrapper">
+                    <div class="wiki-category">Items & Equipments</div>
+                    <ul>
+                        <li data-target="items-misc">Misc. Items</li>
+                        <li data-target="items-weapons">Weapons</li>
+                        <li data-target="items-equipments">Equipments</li>
+                    </ul>
+                </div>
+            </nav>
+
+            <button id="audio-toggle">[ Sound Settings : OFF ]</button>
+        </aside>
+
+        <!-- Article Display Area -->
+        <main id="wiki-content">
+            
+            <!-- Main Index -->
+            <section id="wiki-main" class="wiki-article active">
+                <h1>Project Liminality : Game Design Database</h1>
+                <p>Welcome to the technical design documentation for Project Liminality. This database logs all game statistics, numerical impact values on the Health Points (H.P.) and Sanity Bar (S.B.), as well as the behaviors of documented entities.</p>
+                <p>Select a category from the index to display the project's certified data.</p>
+            </section>
+
+            <!-- Starting Equipment -->
+            <section id="wiki-start" class="wiki-article">
+                <h1>Starting Equipment</h1>
+                <p>Every player systematically spawns with the following core items:</p>
+                
+                <h2>1. VHS Camera</h2>
+                <ul>
+                    <li><strong>Function:</strong> Optical observation system.</li>
+                    <li><strong>Controls:</strong> ZOOOOOOOOOM. Use <strong>[F]</strong> to zoom in and press <strong>[G]</strong> to un-zoom.</li>
+                </ul>
+
+                <h2>2. BackPack</h2>
+                <ul>
+                    <li><strong>Function:</strong> Increases inventory carrying capacity.</li>
+                    <li><strong>Stats:</strong> Grants precisely <strong>+15 storage slots</strong>.</li>
+                    <li><strong>Controls:</strong> Press <strong>[E]</strong> to open it.</li>
+                </ul>
+            </section>
+
+            <!-- Entity 01 -->
+            <section id="entity-01" class="wiki-article">
+                <h1>ENTITY 01 : The Life Form</h1>
+                <div class="infobox">
+                    <div class="infobox-title">Entity Data</div>
+                    <table>
+                        <tr><td>Danger Level</td><td style="color:var(--accent-red); font-weight:bold;">5 Stars / Keter Class</td></tr>
+                        <tr><td>Structure</td><td>Black cables / Organic tissue</td></tr>
+                        <tr><td>Attribute</td><td>Blind</td></tr>
+                    </table>
+                </div>
+
+                <h2>Description & Behavior</h2>
+                <p>The <strong>Life Form</strong> is a massive organism composed of black cables and organic tissue. The entity is completely blind, but patrols corridors searching for movement.</p>
+                <p>It has extremely sensitive hearing and easily detects sprinting, jumping, and other loud actions. It uses loud screams to locate its prey.</p>
+
+                <h2>Offensive Mechanics</h2>
+                <ul>
+                    <li><strong>Echolocative scream:</strong> Blurs players vision, causes ringing sound in the ears, helps locate nearby players.</li>
+                    <li><strong>Tendril Grabs:</strong> Medium Ranged grab that it uses to crush you in the ground or to slam you on walls.</li>
+                </ul>
+
+                <div class="wiki-alert">
+                    <strong>Counter-play:</strong> Crouch, avoid sprinting, stay quiet (QTE to breath), and use distractions when possible (throw items around to lure it).
+                </div>
+            </section>
+
+            <!-- Entity 02 -->
+            <section id="entity-02" class="wiki-article">
+                <h1>ENTITY 02 : Skin-Stealers</h1>
+                <div class="infobox">
+                    <div class="infobox-title">Entity Data</div>
+                    <table>
+                        <tr><td>Danger Level</td><td style="color:var(--accent-red); font-weight:bold;">5 Stars / Keter Class</td></tr>
+                        <tr><td>Speed</td><td>Very slow</td></tr>
+                        <tr><td>Mechanic</td><td>Instant Absorb / Mimicry</td></tr>
+                    </table>
+                </div>
+
+                <h2>Description & Behavior</h2>
+                <p><strong>Skin-Stealers</strong> are a gigantic fleshy organism. They spend most of their life motionless, silently observing their surroundings.</p>
+                <p>While very slow, they slowly move toward nearby prey. <strong>They instantly absorb you upon contact</strong>.</p>
+
+                <h2>Mimicry Ability</h2>
+                <p>Once a victim is absorbed, the entity takes on the exact appearance of the latest victim.</p>
+
+                <div class="wiki-alert">
+                    <strong>Counter-play:</strong> Keep your distance, be cautious around unknown players, and avoid Flesh-Residues.
+                </div>
+            </section>
+
+            <!-- Entity 03 -->
+            <section id="entity-03" class="wiki-article">
+                <h1>ENTITY 03 : The Infection</h1>
+                <div class="infobox">
+                    <div class="infobox-title">Infection Data</div>
+                    <table>
+                        <tr><td>Danger Level</td><td>4 Stars / Almost Safe</td></tr>
+                        <tr><td>Type</td><td>Parasitic fungal organism</td></tr>
+                    </table>
+                </div>
+
+                <h2>Infection Sources</h2>
+                <p>The parasitic fungal organism is spread through contaminated organic matter and:</p>
+                <ul>
+                    <li>Black liquid puddles</li>
+                    <li>Flesh residues</li>
+                    <li>Dead bodies</li>
+                    <li>Contaminated areas</li>
+                </ul>
+
+                <h2>Symptoms Progression</h2>
+                <ul>
+                    <li><strong>20-40% :</strong> Hallucinations begin. Black tendrils/cables/tentacles appear on screen edges.</li>
+                    <li><strong>40-60% :</strong> Arms and legs begin to transform. Visible mutations appears.</li>
+                    <li><strong>60-80% :</strong> Severe hallucinations. Torso becomes infected.</li>
+                    <li><strong>80-99% :</strong> Near-complete conversion.</li>
+                    <li><strong>100% :</strong> Host becomes a <span class="wikilink" data-to="entity-04">Wretch</span>.</li>
+                </ul>
+                <p><strong>Cure:</strong> Almond water or Royal Rations.</p>
+            </section>
+
+            <!-- Entity 04 -->
+            <section id="entity-04" class="wiki-article">
+                <h1>ENTITY 04 : Wretches</h1>
+                <div class="infobox">
+                    <div class="infobox-title">Entity Data</div>
+                    <table>
+                        <tr><td>Hostility</td><td style="color:var(--neon-green)">Passive</td></tr>
+                        <tr><td>State</td><td>Weak and exhausted</td></tr>
+                    </table>
+                </div>
+
+                <h2>Description & Behavior</h2>
+                <p><strong>Wretches</strong> are former humans completely consumed by The Infection.</p>
+                <p>Their bodies became entirely black as the fungal organism replaced and corrupted their original tissues. They are covered in fungal growth and have distorted proportions, though human features partially remain visible.</p>
+                <p>Despite their disturbing appearance, Wretches are not naturally hostile. They are most often found isolated, curled up in corners of empty rooms, quietly crying or remaining motionless for long periods of time.</p>
+
+                <h2>Cure</h2>
+                <p>You can cure them by pouring <strong>ALMOND WATER</strong> or <strong>ROYAL RATIONS</strong> on them. They then become a passive NPC that helps you after you cured them.</p>
+            </section>
+
+            <!-- Entity 05 -->
+            <section id="entity-05" class="wiki-article">
+                <h1>ENTITY 05 : Bone Thieves</h1>
+                <div class="infobox">
+                    <div class="infobox-title">Entity Data</div>
+                    <table>
+                        <tr><td>Danger Level</td><td>3/5 Stars</td></tr>
+                        <tr><td>Behavior</td><td>Hostile when spotting prey</td></tr>
+                    </table>
+                </div>
+
+                <h2>Description & Behavior</h2>
+                <p>Small scavenger-like creatures that inhabit rare regions of the Complex. Their elongated limbs they use to crawl around and their pleasant demeanors might fool you into thinking they're safe when they REALLY aren't. Once they detect you, their "Mouth" will open to reveal the ACTUAL beast inside of them.</p>
+                <p>Normally passive and avoids lighted areas. Frequently scavenges corpses and remains. Becomes hostile when spotting a prey, charging at extreme speeds once provoked.</p>
+
+                <h2>Abilities</h2>
+                <ul>
+                    <li><strong>Bone rush:</strong> A sudden high-speed charge designed to close distance almost instantly.</li>
+                    <li><strong>Skeletal Extraction:</strong> Attempts to tear bones directly from the victim's body causing severe damages.</li>
+                </ul>
+
+                <div class="wiki-alert">
+                    <strong>Counter-play:</strong> Stay aware of your surroundings. Dodge sideways when it charges. Use obstacles to block its path.
+                </div>
+            </section>
+            
+            <!-- Entity 06 -->
+            <section id="entity-06" class="wiki-article">
+                <h1>ENTITY 06 : Smilers</h1>
+                <div class="infobox">
+                    <div class="infobox-title">Entity Data</div>
+                    <table>
+                        <tr><td>Danger Level</td><td>4/5 Stars</td></tr>
+                        <tr><td>Habitat</td><td>Dark zones</td></tr>
+                    </table>
+                </div>
+
+                <h2>Description & Behavior</h2>
+                <p>Hostile entities that inhabit dark environments. They are recognized for their glowing eyes and teeth forming a bright smile, hence their names. They never leave dark areas and they can appear in any region of the Complex.</p>
+                <p>Remains hidden in darkness, watches nearby wanderers, and attacks players entering dark zones. Avoids brightly lit areas.</p>
+
+                <h2>Abilities</h2>
+                <ul>
+                    <li><strong>Shadow-swarm:</strong> They trap their victims and eat them.</li>
+                </ul>
+
+                <div class="wiki-alert">
+                    <strong>Counter-play:</strong> Use your flashlight to kill it. Avoid entering dark rooms without checking thoroughly.
+                </div>
+            </section>
+            
+            <!-- Entity 06-B -->
+            <section id="entity-06-b" class="wiki-article">
+                <h1>ENTITY 06-B : Frowners</h1>
+                
+                <h2>Description & Behavior</h2>
+                <p>A passive variant of the smiler. Frowners are rarely encountered and display none of the aggression shown by their counterparts.</p>
+                <p>Passive, avoids conflict, usually hides from wanderers, and is often found alone.</p>
+
+                <h2>Abilities & Counter-play</h2>
+                <p><strong>Abilities:</strong> None Recorded.</p>
+                <p><strong>Counter-play:</strong> Leave them alone, don't corner them.</p>
+            </section>
+
+            <!-- Entity 07 -->
+            <section id="entity-07" class="wiki-article">
+                <h1>ENTITY 07 : Hounds</h1>
+                <div class="infobox">
+                    <div class="infobox-title">Entity Data</div>
+                    <table>
+                        <tr><td>Danger Level</td><td style="color:var(--accent-red); font-weight:bold;">5/5 Stars</td></tr>
+                        <tr><td>Behavior</td><td>Highly Aggressive</td></tr>
+                    </table>
+                </div>
+
+                <h2>Description & Behavior</h2>
+                <p>Fast-moving predators with distorted humanoid anatomy and animalistic behavior. Hounds are among the most bestial and hunting entities encountered in the Complex.</p>
+                <p>Highly aggressive, hunts moving targets, roams corridors searching for prey, and rarely abandons pursuit.</p>
+
+                <h2>Abilities</h2>
+                <ul>
+                    <li><strong>Pack mentality:</strong> Multiple Hounds may coordinate to chase down prey.</li>
+                </ul>
+
+                <div class="wiki-alert">
+                    <strong>Counter-play:</strong> Break line of sight. Use doors and obstacles. Remain quiet when possible. Never engage directly.
+                </div>
+            </section>
+
+            <!-- Entity 08 -->
+            <section id="entity-08" class="wiki-article">
+                <h1>ENTITY 08 : Facelings</h1>
+                <div class="infobox">
+                    <div class="infobox-title">Entity Data</div>
+                    <table>
+                        <tr><td>Danger Level</td><td style="color:var(--neon-green)">1/5 Stars</td></tr>
+                        <tr><td>Behavior</td><td>Passive</td></tr>
+                    </table>
+                </div>
+
+                <h2>Description & Behavior</h2>
+                <p>Humanoid entities lacking facial features. Most Facelings are completely harmless and show little interest in wanderers. Some have even been observed offering supplies to survivors.</p>
+                <p>Passive, wanders aimlessly, may approach players, and occasionally gives a random item.</p>
+
+                <div class="wiki-alert" style="border-left-color: var(--dark-yellow); background: rgba(74, 69, 33, 0.1);">
+                    <strong>WARNING:</strong> Some Skin-stealers have been known to imitate facelings in order to deceive wanderers.
+                </div>
+
+                <h2>Counter-play</h2>
+                <p>Approach cautiously, watch for abnormal behavior, and never fully trust an unfamiliar faceling.</p>
+            </section>
+            
+            <!-- Rare Encounters -->
+            <section id="rare-encounters" class="wiki-article">
+                <h1>Rare Encounters</h1>
+                <p>The following entities have an incredibly low spawn chance of <strong>0.1%</strong>.</p>
+                <ul>
+                    <li><strong>ShrekSoPhone</strong></li>
+                    <li>
+                        <strong>La Cucaracha</strong> 
+                        <br><em>"AAAAADRIBA DRIBAAAAA YO QUIERO TACO BELL LA CHONA, LA CUCARCHA, EL GIGANTO DE HIERRO Nacho taco chimichango"</em>
+                    </li>
+                    <li><strong>The C.E.O</strong> - <em>"Business"</em></li>
+                    <li><strong>Skeleton trumpet</strong></li>
+                    <li><strong>Skinny depressed serbian man</strong> - <em>"Eugh on vas vraiment devoir le faire?"</em></li>
+                </ul>
+            </section>
+
+            <!-- Foods -->
+            <section id="items-food" class="wiki-article">
+                <h1>FOODS</h1>
+                <p>Foods can have various effects, good or bad ones.</p>
+
+                <div class="responsive-table-container">
+                    <table class="wiki-table">
+                        <thead>
+                            <tr>
+                                <td>Food Name</td>
+                                <td>Statistical Modifiers</td>
+                                <td>Description / Specifics</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Almond Water</strong></td>
+                                <td>Restores 10% of your Sanity Bar</td>
+                                <td>Tastes Watery yummers.</td>
+                            </tr>
+                            <tr>
+                                <td style="color:var(--accent-red)"><strong>Liquid Pain</strong></td>
+                                <td style="color:var(--accent-red)">Removes 20% of HP bar & 10% of Sanity Bar</td>
+                                <td>Applies a nausea effect after drinking. Tastes like it hurts!</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Moldy Crackers</strong></td>
+                                <td>Restores 2% of the H.P. bar</td>
+                                <td>Small poisoning chance. Smells... Nostalgic...</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Royal Rations</strong></td>
+                                <td style="color:var(--neon-green)">Restores 30% of S.B. & 10% of H.P.</td>
+                                <td>Tastes like Honey. Rumors are told that it boosts your system...</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Warm Soda</strong></td>
+                                <td>Restores 5% Sanity</td>
+                                <td>Dissapears randomly.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Office Candy</strong></td>
+                                <td>None recorded</td>
+                                <td>Tastes like an old carpet.. DON'T eat the wrapper for your own good.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>C-Real Bars</strong></td>
+                                <td>Restores 0.1% of S.B. & 0.1% of H.P.</td>
+                                <td>Just a normal cereal bar I guess.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <!-- Misc Items -->
+            <section id="items-misc" class="wiki-article">
+                <h1>MISC. ITEMS</h1>
+                <p>Miscellaneous items are all different.</p>
+                <ul>
+                    <li><strong>Med-Kits :</strong> +20% H.P. but is Slower than the bandages.</li>
+                    <li><strong>Bandages :</strong> +10% H.P. but Faster than Med-kits.</li>
+                    <li><strong>FlashLight :</strong> Lights up to 10 studs. 2.25 Brightness.</li>
+                    <li><strong>Wanderer's NoteBook :</strong> Mini in game wiki.</li>
+                </ul>
+            </section>
+
+            <!-- Weapons -->
+            <section id="items-weapons" class="wiki-article">
+                <h1>WEAPONS!</h1>
+                <p>Troll Or Protect your friends YOU choose!</p>
+                
+                <h2>Melee Weapons</h2>
+                <ul>
+                    <li><strong>Survival Knife :</strong> 10% DMG per hit. Bleedout Effect that lasts 2 minutes.</li>
+                    <li><strong>Wooden Bat :</strong> Deals 20% DMG.</li>
+                    <li><strong>Crowbar :</strong> Deals 30% DMG with a Bleedout Effect. The Bleedout Effect lasts for 1 minute per hit.</li>
+                </ul>
+
+                <h2>Firearms</h2>
+                <ul>
+                    <li><strong>Glock-17 :</strong> 40% DMG per shot. Bullets may be found inside of it but it's a quite rare phenomena, it's preferable to get bullets in other places. You can shoot yourself.</li>
+                    <li><strong>ShotGun :</strong> Deals 60% HP per shot. Bullets are found separately. Kurt Cobain.</li>
+                </ul>
+            </section>
+
+            <!-- Equipments -->
+            <section id="items-equipments" class="wiki-article">
+                <h1>EQUIPMENTS</h1>
+                <p>The best Defense is to Defend yourself.</p>
+                
+                <ul>
+                    <li><strong>Hazmat Suits :</strong> Virus Resistance. +10 H.P.</li>
+                    <li><strong>Body Armor :</strong> +40% HP. Immune to gun attacks.</li>
+                    <li><strong>HeadLamp :</strong> Flash Light But with further Range (20 studs).</li>
+                    <li><strong>Night Vision Goggles :</strong> ooooo shiny.</li>
+                </ul>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        /* Wiki Navigation Engine */
+        const navItems = document.querySelectorAll('#wiki-nav li');
+        const articles = document.querySelectorAll('.wiki-article');
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.getElementById('menu-btn');
+        const wikiContent = document.getElementById('wiki-content');
+
+        // Mobile menu toggle
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('open');
+        });
+
+        // Auto-close when clicking content
+        wikiContent.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+        });
+
+        // Reset responsive sidebar on resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // Switch active article
+        function switchWikiPage(targetId) {
+            articles.forEach(article => article.classList.remove('active'));
+            navItems.forEach(item => item.classList.remove('active'));
+
+            const targetArticle = document.getElementById(targetId);
+            const targetListItem = document.querySelector(`#wiki-nav li[data-target="${targetId}"]`);
+
+            if (targetArticle) targetArticle.classList.add('active');
+            if (targetListItem) targetListItem.classList.add('active');
+            
+            wikiContent.scrollTop = 0;
+            sidebar.classList.remove('open');
+        }
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                switchWikiPage(item.getAttribute('data-target'));
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('wikilink')) {
+                switchWikiPage(e.target.getAttribute('data-to'));
+            }
+        });
+
+        /* Index search filter */
+        const searchInput = document.getElementById('wiki-search');
+        const categoryWrappers = document.querySelectorAll('.wiki-category-wrapper');
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            
+            categoryWrappers.forEach(wrapper => {
+                const listItems = wrapper.querySelectorAll('li');
+                let hasVisibleItem = false;
+
+                listItems.forEach(item => {
+                    if (query === "" || item.innerText.toLowerCase().includes(query)) {
+                        item.style.display = 'block';
+                        hasVisibleItem = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                if (hasVisibleItem) {
+                    wrapper.style.display = 'block';
+                } else {
+                    wrapper.style.display = 'none';
+                }
+            });
+        });
+
+        /* Audio Ambience Engine (Oscillators) */
+        let audioCtx;
+        let humOsc, buzzOsc;
+        let gainNode;
+        const audioBtn = document.getElementById('audio-toggle');
+
+        function startHum() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            humOsc = audioCtx.createOscillator();
+            humOsc.type = 'sine';
+            humOsc.frequency.setValueAtTime(55, audioCtx.currentTime);
+
+            buzzOsc = audioCtx.createOscillator();
+            buzzOsc.type = 'sawtooth';
+            buzzOsc.frequency.setValueAtTime(110, audioCtx.currentTime);
+
+            gainNode = audioCtx.createGain();
+            gainNode.gain.setValueAtTime(0.005, audioCtx.currentTime);
+
+            humOsc.connect(gainNode);
+            buzzOsc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            humOsc.start();
+            buzzOsc.start();
+        }
+
+        audioBtn.addEventListener('click', () => {
+            if (!audioCtx) {
+                startHum();
+                audioBtn.innerText = "[ Sound Settings : ON ]";
+                audioBtn.style.color = "var(--neon-green)";
+                audioBtn.style.borderColor = "var(--neon-green)";
+            } else {
+                if (audioCtx.state === 'running') {
+                    audioCtx.suspend();
+                    audioBtn.innerText = "[ Sound Settings : OFF ]";
+                    audioBtn.style.color = "var(--text-color)";
+                    audioBtn.style.borderColor = "var(--dark-yellow)";
+                } else {
+                    audioCtx.resume();
+                    audioBtn.innerText = "[ Sound Settings : ON ]";
+                    audioBtn.style.color = "var(--neon-green)";
+                    audioBtn.style.borderColor = "var(--neon-green)";
+                }
+            }
+        });
+    </script>
+</body>
+</html>
